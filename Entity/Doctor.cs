@@ -31,5 +31,17 @@ namespace HospitalSystem_WebAPI_dotnet6.Entity {
         [Column("description")]
         public string? Description { get; set; }
 
+        public Doctor() { }
+
+        public Doctor(string id, string name, string sex, int dep_no, string title, string password, string description) { 
+            ID = id;
+            Name = name;
+            Sex = sex;
+            Dep_no = dep_no;
+            Title = title;
+            Password = password;
+            Description = description;
+        }
+
     }
 }

@@ -42,7 +42,10 @@ namespace HospitalSystem_WebAPI_dotnet6.Controllers {
         public ActionResult<PatientView> GetPatient() {
             var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
-            return JWTUtils.GetPatientFromToken<PatientView>(token);
+            //HttpContext.Session.SetString("token", token);            //Session添加
+
+
+            return CSUtils.GetPatientViewFunc().Invoke(token);
         }
 
         [HttpGet]
@@ -99,11 +102,11 @@ namespace HospitalSystem_WebAPI_dotnet6.Controllers {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(90)
                 };
 
-                PatientRecordsResponse? data = _patientService.GetPatientRecords(p, patient).Result.Value;
-                string jsonString = JsonSerializer.Serialize(data);
+                ActionResult<PatientRecordsResponse>? data =  await _patientService.GetPatientRecords(p, patient);
+                string jsonString = JsonSerializer.Serialize(data.Value);
 
                 await _distributedCache.SetAsync($"{patient.ID}_{p}", Encoding.UTF8.GetBytes(jsonString), opt);
-                return await _patientService.GetPatientRecords(p, patient);
+                return data;
             }
 
         }
@@ -153,7 +156,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Controllers {
 
             var response = await RedisUtils.PatientRecordsRemover(_redis, patient);
 
-            return await _patientService.RegistrationSubmit(date, doctor_id, patient);
+            return  _patientService.RegistrationSubmit(date, doctor_id, patient);
         }
 
         [HttpPost]

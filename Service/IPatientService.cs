@@ -28,7 +28,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
 
         public Task<ActionResult<Dictionary<string, object>>> GetDoctorDescription(string doctor_id, string date);
 
-        public Task<ActionResult<Dictionary<string, object>>> RegistrationSubmit(string doctor_id, string date, PatientView patient);
+        public ActionResult<Dictionary<string, object>> RegistrationSubmit(string doctor_id, string date, PatientView patient);
 
         public Task<ActionResult<int>> GetCounts();
 

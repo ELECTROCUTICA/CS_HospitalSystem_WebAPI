@@ -15,7 +15,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Utils {
             var requestBody = new {
                 model = "gpt-4o-mini",
                 messages = new[] {
-                    new { role = "system", content = "现在你是一名医院中的导诊员，指导病人应该去看什么科室，以及提供一些医疗建议"},
+                    new { role = "system", content = "现在你是一名医院中的导诊员，指导病人应该去看什么科室(重要)，以及提供一些医疗建议(次要)"},
                     new { role = "user", content = message}
                 }
             };

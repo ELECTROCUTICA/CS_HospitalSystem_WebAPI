@@ -69,12 +69,13 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
         public async Task<ActionResult<Dictionary<string, object>>> GetRegistrationsToday(string dateParam, PatientView patient) {
             var data = new Dictionary<string, object>();
 
+
             if (patient == null) {
                 data.Add("state", "fail");
                 data.Add("message", "无效的用户登录信息");
             }
 
-            List<RegistrationMap> list = await _sqlContext.RegistrationMaps.Where(v => v.Visit_date.Equals(dateParam) && v.Patient_id.Equals(patient.ID) && v.Status == 1).ToListAsync();
+            List<RegistrationMap> list = await _sqlContext.RegistrationMaps.Where(v => v.Visit_date.Equals(dateParam) && v.Patient_id == patient.ID && v.Status == 1).ToListAsync();
 
             if (list == null || list.Count == 0) {
                 data.Add("您今日没有预约就诊", -1);
@@ -82,7 +83,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
             }
 
             foreach (var item in list) {
-                int lineupCount = await _sqlContext.RegistrationMaps.Where(v => v.Visit_date.Equals(dateParam) && v.Doctor_id.Equals(item.Doctor_id) && v.Status == 1).CountAsync() - 1;
+                int lineupCount = await _sqlContext.RegistrationMaps.Where(v => v.Visit_date.Equals(dateParam) && v.Doctor_id == item.Doctor_id && v.Status == 1).CountAsync() - 1;
 
                 string message;
                 if (lineupCount == 0) {
@@ -128,7 +129,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
             PatientView? patient = _sqlContext.PatientView?.Find(id);
 
             var task = Task.Run(() => {
-                if (patient != null && !string.IsNullOrEmpty(password) && password.Equals(_sqlContext.PatientView?.Find(patient.ID)?.Password)) {
+                if (patient != null && !string.IsNullOrEmpty(password) && password == _sqlContext.PatientView?.Find(patient.ID)?.Password) {
 
                     var payload = new Dictionary<string, object> {
                     { "id", patient.ID },
@@ -202,7 +203,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
             var page = new Page((pn - 1) * 10, 10, pn);
 
 
-            return new PatientRecordsResponse(await _sqlContext.RegistrationMaps.Where(v => v.Patient_id.Equals(patient.ID)).OrderByDescending(p => p.ID).Skip((pn - 1) * page.Size).Take(page.Size).ToListAsync(),
+            return new PatientRecordsResponse(await _sqlContext.RegistrationMaps.Where(v => v.Patient_id == patient.ID).OrderByDescending(p => p.ID).Skip((page.Current_Page - 1) * page.Size).Take(page.Size).ToListAsync(),
                 records_count,
                 total_page_count,
                 pn);
@@ -298,29 +299,29 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
             }
             else {
                 data.Add("state", "ok");
-                data.Add("description", _sqlContext.DoctorView.Where(v => v.ID.Equals(doctor_id)).Select(o => o.Description));
+                data.Add("description", _sqlContext.DoctorView.Where(v => v.ID == doctor_id).Select(o => o.Description));
                 data.Add("message", "请求成功");
             }
             return data;
         }
 
 
-        public async Task<ActionResult<Dictionary<string, object>>> RegistrationSubmit(string doctor_id, string date, PatientView patient) {
+        public ActionResult<Dictionary<string, object>> RegistrationSubmit(string doctor_id, string date, PatientView patient) {
             var data = new Dictionary<string, object>();
 
 
             if (patient != null && !string.IsNullOrEmpty(doctor_id) && !string.IsNullOrEmpty(date)) {
-                List<RegistrationMap> collections = await _sqlContext.RegistrationMaps.Where(v => v.Patient_id.Equals(patient.ID) && v.Visit_date.Equals(date)).ToListAsync();
+                List<RegistrationMap> collections = _sqlContext.RegistrationMaps.Where(v => v.Patient_id == patient.ID && v.Visit_date.Equals(date)).ToList();
 
                 foreach (var registration in collections) {
-                    if (doctor_id.Equals(registration.Doctor_id) && registration.Status == 1) {
+                    if (doctor_id == registration.Doctor_id && registration.Status == 1) {
                         data.Add("state", "duplicated");
                         data.Add("message", "预约失败，请不要重复预约");
                         return data;
                     }
                 }
 
-                DoctorArrangement target = await _sqlContext.DoctorArrangements.Where(v => v.Doctor_id.Equals(doctor_id) && v.Date.Equals(Convert.ToDateTime(date))).FirstAsync();
+                DoctorArrangement target = _sqlContext.DoctorArrangements.Where(v => v.Doctor_id == doctor_id && v.Date.Equals(Convert.ToDateTime(date))).First();
                 if (target.Remain > 0) {
 
                     //事务处理
@@ -332,16 +333,16 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
 
                         Registration new_registration = new(Convert.ToString(Convert.ToInt64(lastID) + 1), doctor_id, patient.ID, 1, DateTime.Parse(date));
 
-                        await _sqlContext.Registrations.AddAsync(new_registration);
-                        await _sqlContext.SaveChangesAsync();
-                        await transcation.CommitAsync();
+                        _sqlContext.Registrations.Add(new_registration);
+                        _sqlContext.SaveChanges();
+                        transcation.Commit();
 
                         data.Add("state", "ok");
                         data.Add("message", "预约成功");
                     }
                     catch (Exception ex) {
                         Console.WriteLine(ex.StackTrace);
-                        await transcation.RollbackAsync();
+                        transcation.RollbackAsync();
                         data.Add("state", "fail");
                         data.Add("message", "执行异常，事务被回滚");
                     }

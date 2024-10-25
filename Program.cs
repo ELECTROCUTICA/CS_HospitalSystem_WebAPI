@@ -32,6 +32,9 @@ builder.Services.AddStackExchangeRedisCache(options => {
     options.InstanceName = "redis_";
 });
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSession();
+
 
 //mysql连接
 string connectString = "Server=localhost;Port=3306;Database=HospitalDB;Uid=root;Pwd=991234;";
@@ -39,6 +42,7 @@ builder.Services.AddDbContext<MySQLContext>(options => options.UseMySQL(connectS
 
 //Service层
 builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 
 var app = builder.Build();
@@ -49,6 +53,8 @@ var app = builder.Build();
 app.UseRouting();
 
 app.UseCors("CorsPolicy1");
+
+app.UseSession();
 
 app.MapControllers();
 
