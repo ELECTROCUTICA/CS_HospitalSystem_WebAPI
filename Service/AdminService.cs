@@ -69,7 +69,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
                     total_page_count = doctors_count / 10 + 1;
                 }
                 Page page = new Page((pn - 1) * 10, 10, pn);
-                doctors = await _sqlContext.DoctorView.Where(v => EF.Functions.Like($"%{keyword}", v.ID) || EF.Functions.Like($"%{keyword}", v.Name)).Skip((page.Current_Page - 1) * page.Size).Take(page.Size).ToListAsync();
+                doctors = await _sqlContext.DoctorView.Where(v => EF.Functions.Like($"%{keyword}%", v.ID) || EF.Functions.Like($"%{keyword}%", v.Name)).Skip((page.Current_Page - 1) * page.Size).Take(page.Size).ToListAsync();
             }
             else {
                 if (doctors_count > 0 && doctors_count % 10 == 0) {
@@ -197,6 +197,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
             return data;
 
         }
+        
 
         public async Task<ActionResult<Dictionary<string, object>>> UpdateDepartment(int dep_no, string dep_name) {
             var data = new Dictionary<string, object>();
@@ -301,24 +302,89 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
             await _sqlContext.DoctorView.FromSqlRaw($"select * from DoctorView where dep_no = {dep_no} and id in ( select doctor_id from DoctorArrangement where date = '{date}')").ToListAsync();
 
         public async Task<ActionResult<Dictionary<string, object>>> CancelSchedule(string date, string doctor_id) {
-            throw new NotImplementedException();
+            var data = new Dictionary<string, object>();
+
+            DoctorArrangement? arrangement = await _sqlContext.DoctorArrangements.Where(a => a.Date.Equals(Convert.ToDateTime(date)) && a.Doctor_id == doctor_id).FirstAsync();
+
+            if (arrangement != null) {
+                _sqlContext.DoctorArrangements.Remove(arrangement);
+                await _sqlContext.SaveChangesAsync();
+                data.Add("state", "ok");
+                data.Add("message", "取消成功");
+                return data;
+            }
+            data.Add("state", "fail");
+            data.Add("message", "取消失败");
+            return data;
         }
 
-        public async Task<ActionResult<DoctorView>> GetDoctor(string id) {
-            throw new NotImplementedException();
-        }
+        public async Task<ActionResult<DoctorView>> GetDoctor(string id) =>
+            await _sqlContext.DoctorView.FindAsync(id);
 
         public async Task<ActionResult<Dictionary<string, object>>> GoToWork(string date, string doctor_id, int remain) {
-            throw new NotImplementedException();
+            var data = new Dictionary<string, object>();
+
+            if (!string.IsNullOrEmpty(date) && !string.IsNullOrEmpty(doctor_id) && remain > 0) {
+                DoctorArrangement arrangement = new DoctorArrangement(Convert.ToDateTime(date), doctor_id, remain);
+                await _sqlContext.DoctorArrangements.AddAsync(arrangement);
+                await _sqlContext.SaveChangesAsync();
+                data.Add("state", "ok");
+                data.Add("message", "排班成功");
+            }
+            else {
+                data.Add("state", "fail");
+                data.Add("message", "排班成功");
+            }
+            return data;
         }
 
 
         public async Task<ActionResult<AdminPatientsDataResponse>> PatientManager(string p, string keyword) {
-            throw new NotImplementedException();
+            int pn;
+
+            if (string.IsNullOrEmpty(p)) pn = 1;
+            else pn = int.Parse(p);
+
+            int patients_count = _sqlContext.PatientView?.Count() != null ? await _sqlContext.PatientView.CountAsync() : 0;
+            int total_page_count;
+
+            Page page = new Page((pn - 1) * 10, 10, pn);
+            List<PatientView> patients;
+
+            if (patients_count > 0 && patients_count % 10 == 0) {
+                total_page_count = patients_count / 10;
+            }
+            else {
+                total_page_count = patients_count / 10 + 1;
+            }
+
+            if (!string.IsNullOrEmpty(keyword)) {
+                patients = await _sqlContext.PatientView.Where(v => EF.Functions.Like($"%{keyword}%", v.ID) || EF.Functions.Like($"%{keyword}%", v.Name)).Skip((page.Current_Page - 1) * page.Size).Take(page.Size).ToListAsync();
+            }
+            else {
+                patients = await _sqlContext.PatientView.Skip((page.Current_Page - 1) * page.Size).Take(page.Size).ToListAsync();
+            }
+
+            return new AdminPatientsDataResponse(patients, patients_count, total_page_count, pn);
         }
 
         public async Task<ActionResult<Dictionary<string, object>>> ResetPassword(string p_id) {
-            throw new NotImplementedException();
+            var data = new Dictionary<string, object>();
+
+            if (string.IsNullOrEmpty(p_id)) {
+                data.Add("state", "fail");
+                data.Add("message", $"重置失败，找不到ID为{p_id}的病人账户");
+            }
+            else {
+                Patient patient = _sqlContext.Patients.Find(p_id);
+                patient.Password = "123456";
+                _sqlContext.Patients.Update(patient);
+                await _sqlContext.SaveChangesAsync();
+                data.Add("state", "ok");
+                data.Add("message", $"用户{p_id}的密码已重置为123456");
+            }
+            return data;
+
         }
 
 

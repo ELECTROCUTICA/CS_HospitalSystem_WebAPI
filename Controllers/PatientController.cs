@@ -34,7 +34,6 @@ namespace HospitalSystem_WebAPI_dotnet6.Controllers {
             _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
             _distributedCache = distributedCache ?? throw new ArgumentNullException(nameof(distributedCache));
             _redis = ConnectionMultiplexer.Connect("127.0.0.1:6379");
-
         }
 
         [HttpGet]
@@ -43,7 +42,6 @@ namespace HospitalSystem_WebAPI_dotnet6.Controllers {
             var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
             //HttpContext.Session.SetString("token", token);            //Session添加
-
 
             return CSUtils.GetPatientViewFunc().Invoke(token);
         }
@@ -118,6 +116,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Controllers {
             var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
             PatientView patient = JWTUtils.GetPatientFromToken<PatientView>(token);
 
+            //执行缓存清理
             var response = await RedisUtils.PatientRecordsRemover(_redis, patient);
 
             return await _patientService.CancelRegistration(id, patient);

@@ -3,10 +3,10 @@ using StackExchange.Redis;
 
 namespace HospitalSystem_WebAPI_dotnet6.Utils {
 
-    public class RedisUtils {
+    public static class RedisUtils {
 
-        //在病人挂号或取消挂号后执行缓存清除
-        public async static Task<bool> PatientRecordsRemover(IConnectionMultiplexer _redis, PatientView patient) {
+        //扩展方法：在病人挂号或取消挂号后执行缓存清除
+        public async static Task<bool> PatientRecordsRemover(this IConnectionMultiplexer _redis, PatientView patient) {
 
             var server = _redis.GetServer(_redis.GetEndPoints().First());
             var db = _redis.GetDatabase();

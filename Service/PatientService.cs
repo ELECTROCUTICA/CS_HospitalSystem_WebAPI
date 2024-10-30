@@ -69,7 +69,6 @@ namespace HospitalSystem_WebAPI_dotnet6.Service {
         public async Task<ActionResult<Dictionary<string, object>>> GetRegistrationsToday(string dateParam, PatientView patient) {
             var data = new Dictionary<string, object>();
 
-
             if (patient == null) {
                 data.Add("state", "fail");
                 data.Add("message", "无效的用户登录信息");

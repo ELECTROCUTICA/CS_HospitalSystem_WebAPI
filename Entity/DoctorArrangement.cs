@@ -19,5 +19,13 @@ namespace HospitalSystem_WebAPI_dotnet6.Entity {
 
         [Column("remain")]
         public int Remain { get; set; }
+
+        public DoctorArrangement() { }
+
+        public DoctorArrangement(DateTime date, string doctor_id, int remain) {
+            Date = date;
+            Doctor_id = doctor_id;
+            Remain = remain;
+        }
     }
 }
