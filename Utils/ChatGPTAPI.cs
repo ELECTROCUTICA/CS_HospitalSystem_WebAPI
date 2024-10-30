@@ -5,7 +5,7 @@ namespace HospitalSystem_WebAPI_dotnet6.Utils {
     public class ChatGPTAPI {
 
         private const string URL = "https://api.chatanywhere.tech/v1/chat/completions";
-        private const string API_KEY = "sk-0FipaHgKpAuhVS0YV45vLDV6fsTDJ5k6ABxbFu7LXKLlLJNm";
+        private const string API_KEY = "*****";
 
         public async static Task<string> SendRequestToChatGPT(string message) { 
             var client = new HttpClient();
